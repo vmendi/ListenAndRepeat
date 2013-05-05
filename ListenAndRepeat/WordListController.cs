@@ -11,7 +11,6 @@ namespace ListenAndRepeat
 	{
 		public WordListController(IntPtr handle) : base (handle)
 		{
-			mWordsModel = new WordsModel();
 		}
 		
 		public override void DidReceiveMemoryWarning ()
@@ -22,37 +21,31 @@ namespace ListenAndRepeat
 			// Release any cached data, images, etc that aren't in use.
 		}
 
-		public override void ViewWillAppear (bool animated)
+		public override void ViewDidLoad()
 		{
-			base.ViewWillAppear (animated);
+			base.ViewDidLoad();
 
+			mWordsModel = new ListenAndRepeatModel();
+		
 			var tableSource = new TableSource(mWordsModel);
 			TableView.Source = tableSource;
 
 			AddButton.Clicked += HandleAddButtonClicked;
 		}
 
+		public override void ViewWillAppear (bool animated)
+		{
+			base.ViewWillAppear(animated);
+
+			TableView.ReloadData();
+		}
+
 		private void HandleAddButtonClicked(object sender, EventArgs e)
 		{
 			var addWord = Storyboard.InstantiateViewController("AddWordController") as AddWordController;
-			addWord.TheWordsModel = mWordsModel;
+			addWord.TheViewModel = mWordsModel;
 
 			NavigationController.PushViewController(addWord, true);
-		}
-
-		public override void ViewDidAppear (bool animated)
-		{
-			base.ViewDidAppear(animated);
-		}
-		
-		public override void ViewWillDisappear (bool animated)
-		{
-			base.ViewWillDisappear(animated);
-		}
-		
-		public override void ViewDidDisappear (bool animated)
-		{
-			base.ViewDidDisappear(animated);
 		}
 
 		[Obsolete]
@@ -62,15 +55,15 @@ namespace ListenAndRepeat
 			return (toInterfaceOrientation != UIInterfaceOrientation.PortraitUpsideDown);
 		}
 
-		WordsModel mWordsModel;
+		ListenAndRepeatModel mWordsModel;
 	}
 
 	public class TableSource : UITableViewSource 
 	{
 		string mCellIdentifier = "WordCell";
-		WordsModel mWordsModel;
+		ListenAndRepeatModel mWordsModel;
 		
-		public TableSource(WordsModel theModel)
+		public TableSource(ListenAndRepeatModel theModel)
 		{
 			mWordsModel = theModel;
 		}

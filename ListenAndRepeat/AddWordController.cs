@@ -9,7 +9,7 @@ namespace ListenAndRepeat
 {
 	public partial class AddWordController : UITableViewController
 	{
-		public WordsModel TheWordsModel { get; set; }
+		public ListenAndRepeatModel TheViewModel { get; set; }
 
 		public AddWordController (IntPtr handle) : base (handle)
 		{
@@ -18,6 +18,8 @@ namespace ListenAndRepeat
 		public override void ViewWillAppear (bool animated)
 		{
 			base.ViewWillAppear (animated);
+
+			TheViewModel.DictionarySearcher.SearchCompleted += OnSearchCompleted;
 
 			TableView.Source = new SearchTableSource(this);
 			mSearchBar = TableView.TableHeaderView as UISearchBar;
@@ -29,25 +31,22 @@ namespace ListenAndRepeat
 			mSearchBar.SearchButtonClicked += (sender, e) => 
 			{
 				UIApplication.SharedApplication.NetworkActivityIndicatorVisible = true;
-
-				var theDictSearch = new DictionarySearch(OnSearchCompleted);
-				theDictSearch.Search(mSearchBar.Text);
+				TheViewModel.DictionarySearcher.Search(mSearchBar.Text);
 			};
 		}
 
-		private void OnSearchCompleted(DictionaryWord theNewWord)
+		public override void ViewWillDisappear(bool animated)
+		{
+			base.ViewWillDisappear(animated);
+
+			TheViewModel.DictionarySearcher.SearchCompleted -= OnSearchCompleted;
+		}
+
+		private void OnSearchCompleted(object sender, DictionarySearch.SearchCompletedEventArgs e)
 		{
 			this.InvokeOnMainThread(delegate 
 			{
-				if (theNewWord != null) 
-				{
-					mSearchBar.ResignFirstResponder();
-					TableView.ReloadData();
-				} 
-				else 
-				{
-					new UIAlertView ("", "Could not retrieve results", null, "OK").Show();
-				}
+				NavigationController.PopViewControllerAnimated(true);
 				
 				UIApplication.SharedApplication.NetworkActivityIndicatorVisible = false;
 			});
@@ -68,14 +67,14 @@ namespace ListenAndRepeat
 		
 		public override int RowsInSection(UITableView tableview, int section)
 		{
-			return mController.TheWordsModel.WordList.Count;
+			return 1;
 		}
 
 		public override UITableViewCell GetCell(UITableView tableView, MonoTouch.Foundation.NSIndexPath indexPath)
 		{
 			UITableViewCell cell = tableView.DequeueReusableCell(mCellIdentifier);
 
-			cell.TextLabel.Text = mController.TheWordsModel.WordList[indexPath.Row];
+			cell.TextLabel.Text = "TODO";
 
 			return cell;
 		}

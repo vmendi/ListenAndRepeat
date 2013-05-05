@@ -99,11 +99,6 @@
     <Compile Include="WordsNavigationController.designer.cs">
       <DependentUpon>WordsNavigationController.cs</DependentUpon>
     </Compile>
-    <Compile Include="WordsModel.cs" />
-    <Compile Include="AddButton.cs" />
-    <Compile Include="AddButton.designer.cs">
-      <DependentUpon>AddButton.cs</DependentUpon>
-    </Compile>
     <Compile Include="WordListController.cs" />
     <Compile Include="WordListController.designer.cs">
       <DependentUpon>WordListController.cs</DependentUpon>
@@ -112,7 +107,9 @@
     <Compile Include="AddWordController.designer.cs">
       <DependentUpon>AddWordController.cs</DependentUpon>
     </Compile>
-    <Compile Include="DictionarySearch.cs" />
+    <Compile Include="SQLite.cs" />
+    <Compile Include="ViewModel\ListenAndRepeatModel.cs" />
+    <Compile Include="ViewModel\DictionarySearch.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="MainStoryboard.storyboard" />
@@ -124,6 +121,10 @@
     <BundleResource Include="Resources\second%402x.png" />
     <BundleResource Include="Resources\speaker01.png" />
     <BundleResource Include="Resources\speaker01%402x.png" />
+    <BundleResource Include="Resources\Default-568h%402x.png" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <Folder Include="ViewModel\" />
+  </ItemGroup>
 </Project>
