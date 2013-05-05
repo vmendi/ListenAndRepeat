@@ -108,8 +108,10 @@
       <DependentUpon>AddWordController.cs</DependentUpon>
     </Compile>
     <Compile Include="SQLite.cs" />
-    <Compile Include="ViewModel\ListenAndRepeatModel.cs" />
-    <Compile Include="ViewModel\DictionarySearch.cs" />
+    <Compile Include="ViewModel\MainModel.cs" />
+    <Compile Include="Util\ServiceContainer.cs" />
+    <Compile Include="ViewModel\DictionarySearchModel.cs" />
+    <Compile Include="ViewModel\PlaySoundModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="MainStoryboard.storyboard" />
@@ -126,5 +128,6 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Folder Include="ViewModel\" />
+    <Folder Include="Util\" />
   </ItemGroup>
 </Project>

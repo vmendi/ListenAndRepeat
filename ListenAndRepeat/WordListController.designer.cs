@@ -13,12 +13,20 @@ namespace ListenAndRepeat
 	{
 		[Outlet]
 		MonoTouch.UIKit.UIBarButtonItem AddButton { get; set; }
+
+		[Outlet]
+		MonoTouch.UIKit.UIBarButtonItem EditButton { get; set; }
 		
 		void ReleaseDesignerOutlets ()
 		{
 			if (AddButton != null) {
 				AddButton.Dispose ();
 				AddButton = null;
+			}
+
+			if (EditButton != null) {
+				EditButton.Dispose ();
+				EditButton = null;
 			}
 		}
 	}

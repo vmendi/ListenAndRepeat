@@ -4,22 +4,23 @@ using System;
 
 using MonoTouch.Foundation;
 using MonoTouch.UIKit;
+using ListenAndRepeat.ViewModel;
+using ListenAndRepeat.Util;
 
 namespace ListenAndRepeat
 {
 	public partial class AddWordController : UITableViewController
 	{
-		public ListenAndRepeatModel TheViewModel { get; set; }
-
 		public AddWordController (IntPtr handle) : base (handle)
 		{
+			mDictionarySearchModel = ServiceContainer.Resolve<DictionarySearchModel>();
 		}
 
 		public override void ViewWillAppear (bool animated)
 		{
 			base.ViewWillAppear (animated);
 
-			TheViewModel.DictionarySearcher.SearchCompleted += OnSearchCompleted;
+			mDictionarySearchModel.SearchCompleted += OnSearchCompleted;
 
 			TableView.Source = new SearchTableSource(this);
 			mSearchBar = TableView.TableHeaderView as UISearchBar;
@@ -30,8 +31,7 @@ namespace ListenAndRepeat
 			mSearchBar.AutocapitalizationType = UITextAutocapitalizationType.None;
 			mSearchBar.SearchButtonClicked += (sender, e) => 
 			{
-				UIApplication.SharedApplication.NetworkActivityIndicatorVisible = true;
-				TheViewModel.DictionarySearcher.Search(mSearchBar.Text);
+				mDictionarySearchModel.Search(mSearchBar.Text);
 			};
 		}
 
@@ -39,19 +39,18 @@ namespace ListenAndRepeat
 		{
 			base.ViewWillDisappear(animated);
 
-			TheViewModel.DictionarySearcher.SearchCompleted -= OnSearchCompleted;
+			mDictionarySearchModel.SearchCompleted -= OnSearchCompleted;
 		}
 
-		private void OnSearchCompleted(object sender, DictionarySearch.SearchCompletedEventArgs e)
+		private void OnSearchCompleted(object sender, SearchCompletedEventArgs e)
 		{
 			this.InvokeOnMainThread(delegate 
 			{
 				NavigationController.PopViewControllerAnimated(true);
-				
-				UIApplication.SharedApplication.NetworkActivityIndicatorVisible = false;
 			});
 		}
 
+		private DictionarySearchModel mDictionarySearchModel;
 		private UISearchBar mSearchBar;
 	}
 

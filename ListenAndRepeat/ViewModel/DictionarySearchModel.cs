@@ -6,11 +6,12 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using MonoTouch.Foundation;
 
-namespace ListenAndRepeat
+namespace ListenAndRepeat.ViewModel
 {
-	public class DictionarySearch
+	public class DictionarySearchModel
 	{
 		public event EventHandler<SearchCompletedEventArgs> SearchCompleted;
+		public event EventHandler IsSearchingChanged;
 
 		public void Search(string word)
 		{
@@ -25,6 +26,25 @@ namespace ListenAndRepeat
 				mCurrentWord = null;
 				mCurrentThread = new Thread(SearchThread);
 				mCurrentThread.Start(word);
+
+				IsSearching = true;
+			}
+		}
+
+		public bool IsSearching
+		{
+			get { return mIsSearching; }
+
+			protected set
+			{
+				if (value != mIsSearching)
+				{
+					mIsSearching = value;
+
+					var method = IsSearchingChanged;
+					if (method != null)
+						IsSearchingChanged(this, EventArgs.Empty);
+				}
 			}
 		}
 
@@ -49,13 +69,16 @@ namespace ListenAndRepeat
 			OnSearchCompleted();
 		}
 
-		private void OnSearchCompleted()
+		protected void OnSearchCompleted()
 		{
-			SearchCompleted(this, new SearchCompletedEventArgs() { FoundWord = mCurrentWord });
+			var method = SearchCompleted;
+			if (method != null)
+				method(this, new SearchCompletedEventArgs() { FoundWord = mCurrentWord });
 
 			lock (mSearchInProgressSync)
 			{
 				mCurrentThread = null;
+				IsSearching = false;
 			}
 		}
 
@@ -67,16 +90,9 @@ namespace ListenAndRepeat
 			return word.Substring(0, 1).ToUpper() + word.Substring(1);
 		}
 
-		private void CreateSoundsDirectory()
-		{
-			var documentsPath =	Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-			var soundsPath = Path.Combine(documentsPath, "..", "Library", "Sounds");
-			Directory.CreateDirectory(soundsPath);
-		}
-
 		private void DownloadWavFiles()
 		{
-			CreateSoundsDirectory();
+			Directory.CreateDirectory(MainModel.GetSoundsDirectory());
 
 			foreach (var wave in mCurrentWord.Waves)
 			{
@@ -103,29 +119,30 @@ namespace ListenAndRepeat
 			}
 		}
 
-		public class SearchCompletedEventArgs : EventArgs
-		{
-			public DictionarySearch.SearchWord FoundWord { get; set; }
-		}
-				
-		public class SearchWord
-		{
-			public string Word { get { return mWord; } }
-			public List<Tuple<string, string>> Waves { get { return mWaves; } }
-			
-			public SearchWord(string word)
-			{
-				mWord = word;
-				mWaves = new List<Tuple<string, string>>();
-			}
-			
-			private string mWord;
-			private List<Tuple<string, string>> mWaves;
-		}
-
 		private Thread mCurrentThread;
 		private readonly object mSearchInProgressSync = new object();
+		private bool mIsSearching = false;
 		private SearchWord mCurrentWord;
+	}
+
+	public class SearchCompletedEventArgs : EventArgs
+	{
+		public SearchWord FoundWord { get; set; }
+	}
+	
+	public class SearchWord
+	{
+		public string Word { get { return mWord; } }
+		public List<Tuple<string, string>> Waves { get { return mWaves; } }
+		
+		public SearchWord(string word)
+		{
+			mWord = word;
+			mWaves = new List<Tuple<string, string>>();
+		}
+		
+		private string mWord;
+		private List<Tuple<string, string>> mWaves;
 	}
 }
 

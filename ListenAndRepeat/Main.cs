@@ -4,6 +4,7 @@ using System.Linq;
 
 using MonoTouch.Foundation;
 using MonoTouch.UIKit;
+using ListenAndRepeat.ViewModel;
 
 namespace ListenAndRepeat
 {
@@ -12,8 +13,8 @@ namespace ListenAndRepeat
 		// This is the main entry point of the application.
 		static void Main (string[] args)
 		{
-			// if you want to use a different Application Delegate class from "AppDelegate"
-			// you can specify it here.
+			MainModel.RegisterServices();
+
 			UIApplication.Main (args, null, "AppDelegate");
 		}
 	}

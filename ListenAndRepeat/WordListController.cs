@@ -4,6 +4,8 @@ using System;
 
 using MonoTouch.Foundation;
 using MonoTouch.UIKit;
+using ListenAndRepeat.ViewModel;
+using ListenAndRepeat.Util;
 
 namespace ListenAndRepeat
 {
@@ -11,8 +13,10 @@ namespace ListenAndRepeat
 	{
 		public WordListController(IntPtr handle) : base (handle)
 		{
+			mMainModel = ServiceContainer.Resolve<MainModel>();
+			mDictionarySearchModel = ServiceContainer.Resolve<DictionarySearchModel>();
 		}
-		
+				
 		public override void DidReceiveMemoryWarning ()
 		{
 			// Releases the view if it doesn't have a superview.
@@ -24,30 +28,55 @@ namespace ListenAndRepeat
 		public override void ViewDidLoad()
 		{
 			base.ViewDidLoad();
-
-			mWordsModel = new ListenAndRepeatModel();
-		
-			var tableSource = new TableSource(mWordsModel);
+								
+			var tableSource = new TableSource();
 			TableView.Source = tableSource;
 
-			AddButton.Clicked += HandleAddButtonClicked;
+			AddButton.Clicked += delegate 
+			{
+				var addWord = Storyboard.InstantiateViewController("AddWordController") as AddWordController;
+				NavigationController.PushViewController(addWord, true);
+			};
+
+			mMainModel.WordsListChanged += delegate 
+			{
+				this.InvokeOnMainThread(delegate
+				{
+					TableView.ReloadData();
+				});
+			};
+
+			mDictionarySearchModel.IsSearchingChanged += delegate 
+			{
+				this.InvokeOnMainThread(delegate 
+				{
+					UIApplication.SharedApplication.NetworkActivityIndicatorVisible = mDictionarySearchModel.IsSearching;
+				});
+			};
+
+			SetUpEditButton();
 		}
 
-		public override void ViewWillAppear (bool animated)
-		{
-			base.ViewWillAppear(animated);
+		private void SetUpEditButton()
+		{						
+			mDoneButton = new UIBarButtonItem(UIBarButtonSystemItem.Done, (s,e) =>
+			{
+				TableView.SetEditing (false, true);
+				NavigationItem.RightBarButtonItem = mEditButton;
+			});
 
-			TableView.ReloadData();
+			mEditButton = new UIBarButtonItem(UIBarButtonSystemItem.Edit, (s,e) =>
+			{
+				if (TableView.Editing)
+					TableView.SetEditing (false, true); // if we've half-swiped a row
+
+				TableView.SetEditing (true, true);
+				NavigationItem.RightBarButtonItem = mDoneButton;
+			});
+
+			NavigationItem.RightBarButtonItem = mEditButton;
 		}
-
-		private void HandleAddButtonClicked(object sender, EventArgs e)
-		{
-			var addWord = Storyboard.InstantiateViewController("AddWordController") as AddWordController;
-			addWord.TheViewModel = mWordsModel;
-
-			NavigationController.PushViewController(addWord, true);
-		}
-
+	
 		[Obsolete]
 		public override bool ShouldAutorotateToInterfaceOrientation (UIInterfaceOrientation toInterfaceOrientation)
 		{
@@ -55,44 +84,80 @@ namespace ListenAndRepeat
 			return (toInterfaceOrientation != UIInterfaceOrientation.PortraitUpsideDown);
 		}
 
-		ListenAndRepeatModel mWordsModel;
+		MainModel mMainModel;
+		DictionarySearchModel mDictionarySearchModel;
+		UIBarButtonItem mEditButton;
+		UIBarButtonItem mDoneButton;
 	}
 
 	public class TableSource : UITableViewSource 
 	{
-		string mCellIdentifier = "WordCell";
-		ListenAndRepeatModel mWordsModel;
+		static string mCellIdentifier = "WordCell";
+		MainModel mMainModel;
+		PlaySoundModel mPlaySoundModel;
 		
-		public TableSource(ListenAndRepeatModel theModel)
+		public TableSource()
 		{
-			mWordsModel = theModel;
+			mMainModel = ServiceContainer.Resolve<MainModel>();
+			mPlaySoundModel = ServiceContainer.Resolve<PlaySoundModel>();
 		}
 		
 		public override int RowsInSection(UITableView tableview, int section)
 		{
-			return mWordsModel.WordList.Count;
+			return mMainModel.WordsList.Count;
 		}
 
 		public override void AccessoryButtonTapped(UITableView tableView, NSIndexPath indexPath)
 		{
-			new UIAlertView("DetailDisclosureButton Touched", mWordsModel.WordList[indexPath.Row], null, "OK", null).Show();
+			//new UIAlertView("DetailDisclosureButton Touched", mMainModel.WordsList[indexPath.Row], null, "OK", null).Show();
 		}
 		
 		public override UITableViewCell GetCell(UITableView tableView, MonoTouch.Foundation.NSIndexPath indexPath)
 		{
 			UITableViewCell cell = tableView.DequeueReusableCell(mCellIdentifier);
 
-			cell.TextLabel.Text = mWordsModel.WordList[indexPath.Row];
+			cell.TextLabel.Text = mMainModel.WordsList[indexPath.Row].Word;
 
 			return cell;
 		}
-		
-		/*
+
 		public override void RowSelected (UITableView tableView, NSIndexPath indexPath)
 		{
-			// new UIAlertView("Row Selected", tableItems[indexPath.Row], null, "OK", null).Show();
-			tableView.DeselectRow(indexPath, true); // iOS convention is to remove the highlight
+			mPlaySoundModel.PlaySound(mMainModel.WordsList[indexPath.Row]);
+
+			// iOS convention is to remove the highlight
+			tableView.DeselectRow(indexPath, true);
 		}
-		*/
+
+		public override void CommitEditingStyle (UITableView tableView, UITableViewCellEditingStyle editingStyle, MonoTouch.Foundation.NSIndexPath indexPath)
+		{
+			switch (editingStyle)
+			{
+			case UITableViewCellEditingStyle.Delete:
+				mMainModel.RemoveWordAt(indexPath.Row);		
+				break;
+			case UITableViewCellEditingStyle.None:
+				Console.WriteLine ("CommitEditingStyle:None called");
+				break;
+			}
+		}
+
+		public override bool CanEditRow (UITableView tableView, NSIndexPath indexPath)
+		{
+			return true;
+		}
+		public override bool CanMoveRow (UITableView tableView, NSIndexPath indexPath)
+		{
+			return true;
+		}
+		public override UITableViewCellEditingStyle EditingStyleForRow (UITableView tableView, NSIndexPath indexPath)
+		{
+			return UITableViewCellEditingStyle.Delete; // Don't suppport Insert
+		}
+
+		public override void MoveRow (UITableView tableView, NSIndexPath sourceIndexPath, NSIndexPath destinationIndexPath)
+		{
+			mMainModel.ReorderWords(sourceIndexPath.Row, destinationIndexPath.Row);
+		}
 	}
 }

@@ -58,11 +58,13 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" id="jtP-xJ-7lh">
-                        <barButtonItem key="rightBarButtonItem" systemItem="add" id="jkg-fT-6hf"/>
+                        <barButtonItem key="leftBarButtonItem" systemItem="add" id="jkg-fT-6hf"/>
+                        <barButtonItem key="rightBarButtonItem" systemItem="edit" id="q0J-J0-bwT"/>
                     </navigationItem>
                     <simulatedTabBarMetrics key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="AddButton" destination="jkg-fT-6hf" id="mNG-gz-DWW"/>
+                        <outlet property="EditButton" destination="q0J-J0-bwT" id="Dcf-Sd-Ofr"/>
                     </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="btk-ym-Hc5" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -160,8 +162,8 @@
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                     </tabBar>
                     <connections>
-                        <segue destination="3" kind="relationship" relationship="viewControllers" id="27"/>
-                        <segue destination="dpj-cE-2nL" kind="relationship" relationship="viewControllers" id="bRg-QL-66q"/>
+                        <segue destination="dpj-cE-2nL" kind="relationship" relationship="viewControllers" id="qlG-mR-osU"/>
+                        <segue destination="3" kind="relationship" relationship="viewControllers" id="bEc-bH-bnZ"/>
                     </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="14" sceneMemberID="firstResponder"/>
@@ -188,6 +190,7 @@
             <source key="sourceIdentifier" type="project" relativePath="./Classes/WordListController.h"/>
             <relationships>
                 <relationship kind="outlet" name="AddButton" candidateClass="UIBarButtonItem"/>
+                <relationship kind="outlet" name="EditButton" candidateClass="UIBarButtonItem"/>
             </relationships>
         </class>
         <class className="WordsNavigationController" superclassName="UINavigationController">

@@ -4,6 +4,7 @@ using System;
 
 using MonoTouch.Foundation;
 using MonoTouch.UIKit;
+using ListenAndRepeat.ViewModel;
 
 namespace ListenAndRepeat
 {
