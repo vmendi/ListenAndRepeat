@@ -112,6 +112,7 @@
     <Compile Include="Util\ServiceContainer.cs" />
     <Compile Include="ViewModel\DictionarySearchModel.cs" />
     <Compile Include="ViewModel\PlaySoundModel.cs" />
+    <Compile Include="ViewModel\SuggestionModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="MainStoryboard.storyboard" />
@@ -124,6 +125,7 @@
     <BundleResource Include="Resources\speaker01.png" />
     <BundleResource Include="Resources\speaker01%402x.png" />
     <BundleResource Include="Resources\Default-568h%402x.png" />
+    <BundleResource Include="Resources\3esl.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

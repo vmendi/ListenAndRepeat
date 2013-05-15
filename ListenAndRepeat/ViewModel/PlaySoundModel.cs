@@ -12,9 +12,12 @@ namespace ListenAndRepeat.ViewModel
 
 		public void PlaySound(WordModel theWord)
 		{
-			var localFile = Path.Combine("file://", MainModel.GetSoundsDirectory(), theWord.WaveFileName);
-			mCurrentSound = AVAudioPlayer.FromData(MonoTouch.Foundation.NSData.FromFile(localFile));
-			mCurrentSound.Play();
+			if (theWord.Status == WordStatus.COMPLETE)
+			{
+				var localFile = Path.Combine ("file://", MainModel.GetSoundsDirectory (), theWord.WaveFileName);
+				mCurrentSound = AVAudioPlayer.FromData (MonoTouch.Foundation.NSData.FromFile(localFile));
+				mCurrentSound.Play ();
+			}
 		}
 
 		AVAudioPlayer mCurrentSound;

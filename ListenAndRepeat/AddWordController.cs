@@ -13,14 +13,13 @@ namespace ListenAndRepeat
 	{
 		public AddWordController (IntPtr handle) : base (handle)
 		{
-			mDictionarySearchModel = ServiceContainer.Resolve<DictionarySearchModel>();
+			mMainModel = ServiceContainer.Resolve<MainModel> ();
+			mSuggestionModel = ServiceContainer.Resolve<SuggestionModel> ();
 		}
 
 		public override void ViewWillAppear (bool animated)
 		{
 			base.ViewWillAppear (animated);
-
-			mDictionarySearchModel.SearchCompleted += OnSearchCompleted;
 
 			TableView.Source = new SearchTableSource(this);
 			mSearchBar = TableView.TableHeaderView as UISearchBar;
@@ -31,57 +30,68 @@ namespace ListenAndRepeat
 			mSearchBar.AutocapitalizationType = UITextAutocapitalizationType.None;
 			mSearchBar.SearchButtonClicked += (sender, e) => 
 			{
-				mDictionarySearchModel.Search(mSearchBar.Text);
+				AddWord(mSearchBar.Text);
 			};
-		}
-
-		public override void ViewWillDisappear(bool animated)
-		{
-			base.ViewWillDisappear(animated);
-
-			mDictionarySearchModel.SearchCompleted -= OnSearchCompleted;
-		}
-
-		private void OnSearchCompleted(object sender, SearchCompletedEventArgs e)
-		{
-			this.InvokeOnMainThread(delegate 
+			mSearchBar.TextChanged += (sender, e) => 
 			{
+				mSuggestionModel.NewSuggestion(mSearchBar.Text);
+			};
+
+			mSuggestionModel.SuggestionChanged += (sender, e) => 
+			{
+				this.InvokeOnMainThread(delegate
+			    {
+					TableView.ReloadData();
+				});
+			};
+
+			mSearchBar.BecomeFirstResponder ();
+		}
+
+		public void AddWord (string theWord)
+		{
+			this.InvokeOnMainThread(delegate
+			{
+				mMainModel.AddWord(theWord);
 				NavigationController.PopViewControllerAnimated(true);
 			});
 		}
 
-		private DictionarySearchModel mDictionarySearchModel;
-		private UISearchBar mSearchBar;
+		MainModel mMainModel;
+		SuggestionModel mSuggestionModel;
+		UISearchBar mSearchBar;
 	}
 
 	public class SearchTableSource : UITableViewSource 
 	{
+		AddWordController mAddWordController;
+		SuggestionModel mSuggestionModel;
 		string mCellIdentifier = "SearchWordCell";
-		AddWordController mController;
-		
+				
 		public SearchTableSource(AddWordController theController)
 		{
-			mController = theController;
+			mSuggestionModel = ServiceContainer.Resolve<SuggestionModel>();
+			mAddWordController = theController;
 		}
-		
+
 		public override int RowsInSection(UITableView tableview, int section)
 		{
-			return 1;
+			return mSuggestionModel.Suggestion.Count;
 		}
 
 		public override UITableViewCell GetCell(UITableView tableView, MonoTouch.Foundation.NSIndexPath indexPath)
 		{
 			UITableViewCell cell = tableView.DequeueReusableCell(mCellIdentifier);
 
-			cell.TextLabel.Text = "TODO";
+			cell.TextLabel.Text = mSuggestionModel.Suggestion[indexPath.Row];
 
 			return cell;
 		}
 
 		public override void RowSelected (UITableView tableView, NSIndexPath indexPath)
 		{
-			//new UIAlertView("Row Selected", tableItems[indexPath.Row], null, "OK", null).Show();
-			//tableView.DeselectRow(indexPath, true); // iOS convention is to remove the highlight
+			tableView.DeselectRow(indexPath, true);
+			mAddWordController.AddWord(mSuggestionModel.Suggestion[indexPath.Row]);
 		}
 	}
 }

@@ -14,7 +14,6 @@ namespace ListenAndRepeat
 		public WordListController(IntPtr handle) : base (handle)
 		{
 			mMainModel = ServiceContainer.Resolve<MainModel>();
-			mDictionarySearchModel = ServiceContainer.Resolve<DictionarySearchModel>();
 		}
 				
 		public override void DidReceiveMemoryWarning ()
@@ -46,13 +45,6 @@ namespace ListenAndRepeat
 				});
 			};
 
-			mDictionarySearchModel.IsSearchingChanged += delegate 
-			{
-				this.InvokeOnMainThread(delegate 
-				{
-					UIApplication.SharedApplication.NetworkActivityIndicatorVisible = mDictionarySearchModel.IsSearching;
-				});
-			};
 
 			SetUpEditButton();
 		}
@@ -116,7 +108,22 @@ namespace ListenAndRepeat
 		{
 			UITableViewCell cell = tableView.DequeueReusableCell(mCellIdentifier);
 
-			cell.TextLabel.Text = mMainModel.WordsList[indexPath.Row].Word;
+			WordModel theWordModel = mMainModel.WordsList [indexPath.Row];
+			cell.TextLabel.Text = theWordModel.Word;
+
+			if (theWordModel.Status == WordStatus.NOT_STARTED) {
+				cell.TextLabel.TextColor = UIColor.LightGray;
+				cell.DetailTextLabel.Text = "Not Started";
+			} else if (theWordModel.Status == WordStatus.QUERYING_AH) {
+				cell.TextLabel.TextColor = UIColor.LightGray;
+				cell.DetailTextLabel.Text = "Searching...";
+			} else if (theWordModel.Status == WordStatus.NOT_FOUND) {
+				cell.TextLabel.TextColor = UIColor.Red;
+				cell.DetailTextLabel.Text = "Not Found";
+			} else {
+				cell.TextLabel.TextColor = UIColor.Black;
+				cell.DetailTextLabel.Text = "Downloaded... TODO";
+			}
 
 			return cell;
 		}

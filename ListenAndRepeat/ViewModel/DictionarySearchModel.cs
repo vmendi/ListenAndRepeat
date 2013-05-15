@@ -11,14 +11,13 @@ namespace ListenAndRepeat.ViewModel
 	public class DictionarySearchModel
 	{
 		public event EventHandler<SearchCompletedEventArgs> SearchCompleted;
-		public event EventHandler IsSearchingChanged;
 
 		public void Search(string word)
 		{
-			word = Sanitize(word);
-
 			lock (mSearchInProgressSync)
 			{
+				Console.WriteLine ("Starting " + word);
+
 				// Is there another search in progress?
 				if (mCurrentThread != null)
 					mCurrentThread.Abort();
@@ -26,24 +25,15 @@ namespace ListenAndRepeat.ViewModel
 				mCurrentWord = null;
 				mCurrentThread = new Thread(SearchThread);
 				mCurrentThread.Start(word);
-
-				IsSearching = true;
 			}
 		}
 
 		public bool IsSearching
 		{
-			get { return mIsSearching; }
-
-			protected set
+			get 
 			{
-				if (value != mIsSearching)
-				{
-					mIsSearching = value;
-
-					var method = IsSearchingChanged;
-					if (method != null)
-						IsSearchingChanged(this, EventArgs.Empty);
+				lock (mSearchInProgressSync) {
+					return mCurrentThread != null; 
 				}
 			}
 		}
@@ -52,12 +42,16 @@ namespace ListenAndRepeat.ViewModel
 		{
 			try
 			{
-				string theSearchURL = String.Format("http://ahdictionary.com/word/search.html?q={0}", word);
-				string htmlText = new WebClient().DownloadString(new Uri(theSearchURL));
-				
+				var theSearchURL = String.Format("http://ahdictionary.com/word/search.html?q={0}", word);
+
+				Console.WriteLine ("Step 1 " + (String)word);
+				var htmlText = mWebClient.DownloadString(new Uri(theSearchURL));
+				Console.WriteLine ("Step 2 " + (String)word);
+								
 				if (!htmlText.Contains("No word definition found"))
 				{
 					mCurrentWord = new SearchWord((string)word);
+					Console.WriteLine ("Step 3 " + (String)word);
 					
 					ParseWavFiles(htmlText);
 					DownloadWavFiles();
@@ -66,28 +60,22 @@ namespace ListenAndRepeat.ViewModel
 			catch (Exception) {
 			}
 
+			Console.WriteLine ("Step 10 " + (String)word);
 			OnSearchCompleted();
 		}
 
 		protected void OnSearchCompleted()
 		{
-			var method = SearchCompleted;
-			if (method != null)
-				method(this, new SearchCompletedEventArgs() { FoundWord = mCurrentWord });
+			var currentWord = mCurrentWord;
 
 			lock (mSearchInProgressSync)
 			{
 				mCurrentThread = null;
-				IsSearching = false;
 			}
-		}
 
-		private string Sanitize(string word)
-		{
-			word = word.Trim();
-
-			// Capitalize
-			return word.Substring(0, 1).ToUpper() + word.Substring(1);
+			var method = SearchCompleted;
+			if (method != null)
+				method(this, new SearchCompletedEventArgs() { FoundWord = currentWord });
 		}
 
 		private void DownloadWavFiles()
@@ -96,7 +84,9 @@ namespace ListenAndRepeat.ViewModel
 
 			foreach (var wave in mCurrentWord.Waves)
 			{
-				var theDataBytes = new WebClient().DownloadData("http://ahdictionary.com" + wave.Item1);
+				Console.WriteLine ("Step 4 " + wave.Item1);
+				var theDataBytes = mWebClient.DownloadData("http://ahdictionary.com" + wave.Item1);
+				Console.WriteLine ("Step 5 " + wave.Item1);
 
 				// The Library/Cache/ folder might be cleaned out, so it's better to store the files in our
 				// own folder and tell the OS to not backup them
@@ -123,6 +113,8 @@ namespace ListenAndRepeat.ViewModel
 		private readonly object mSearchInProgressSync = new object();
 		private bool mIsSearching = false;
 		private SearchWord mCurrentWord;
+
+		private WebClient mWebClient = new WebClient ();
 	}
 
 	public class SearchCompletedEventArgs : EventArgs
