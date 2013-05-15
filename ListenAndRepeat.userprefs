@@ -5,7 +5,7 @@
       <File FileName="ListenAndRepeat/WordListController.cs" Line="123" Column="6" />
       <File FileName="ListenAndRepeat/ViewModel/MainModel.cs" Line="85" Column="66" />
       <File FileName="ListenAndRepeat/AddWordController.cs" Line="47" Column="4" />
-      <File FileName="ListenAndRepeat/ViewModel/DictionarySearchModel.cs" Line="58" Column="22" />
+      <File FileName="ListenAndRepeat/ViewModel/DictionarySearchModel.cs" Line="58" Column="6" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">

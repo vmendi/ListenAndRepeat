@@ -100,19 +100,29 @@ namespace ListenAndRepeat.ViewModel
 		{
 			using (var conn = new SQLite.SQLiteConnection(mDatabasePath))
 			{
-				var theWord = FindWord (conn, e.FoundWord.Word);
+				var theWord = FindWord(conn, e.Word);
 
 				if (theWord == null)	// The user deleted the word?
 					return;
 
-				if (e.FoundWord != null && e.FoundWord.Waves.Count > 0)
+				if (e.IsGeneralError)
 				{
-					theWord.WaveFileName = e.FoundWord.Waves.First().Item2;
-					theWord.Status = WordStatus.COMPLETE;
+					theWord.Status = WordStatus.GENERAL_ERROR;
 				}
-				else 
+				else
+				if (e.IsNetworkError)
+				{
+					theWord.Status = WordStatus.NETWORK_ERROR;
+				}
+				else
+				if (!e.Found || e.Waves.Count == 0)
 				{
 					theWord.Status = WordStatus.NOT_FOUND;
+				}
+				else
+				{
+					theWord.WaveFileName = e.Waves.First().Item2;
+					theWord.Status = WordStatus.COMPLETE;
 				}
 
 				conn.Update (theWord);
@@ -207,7 +217,9 @@ namespace ListenAndRepeat.ViewModel
 		NOT_STARTED,
 		QUERYING_AH,
 		COMPLETE,
-		NOT_FOUND
+		NOT_FOUND,
+		NETWORK_ERROR,
+		GENERAL_ERROR
 	}
 
 	[Serializable]

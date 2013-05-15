@@ -120,6 +120,12 @@ namespace ListenAndRepeat
 			} else if (theWordModel.Status == WordStatus.NOT_FOUND) {
 				cell.TextLabel.TextColor = UIColor.Red;
 				cell.DetailTextLabel.Text = "Not Found";
+			} else if (theWordModel.Status == WordStatus.NETWORK_ERROR) {
+				cell.TextLabel.TextColor = UIColor.Red;
+				cell.DetailTextLabel.Text = "Network error";
+			} else if (theWordModel.Status == WordStatus.GENERAL_ERROR) {
+				cell.TextLabel.TextColor = UIColor.Red;
+				cell.DetailTextLabel.Text = "General error";
 			} else {
 				cell.TextLabel.TextColor = UIColor.Black;
 				cell.DetailTextLabel.Text = "Downloaded... TODO";
