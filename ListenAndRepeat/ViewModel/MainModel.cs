@@ -22,8 +22,9 @@ namespace ListenAndRepeat.ViewModel
 		public MainModel()
 		{
 			// This forces the instantiation
-			mDictionarySearcher = ServiceContainer.Resolve<DictionarySearchModel>();
+			mDictionarySearcher = ServiceContainer.Resolve<DictionarySearchModel> ();
 			mSuggestionModel = ServiceContainer.Resolve<SuggestionModel> ();
+			mPlaySoundModel = ServiceContainer.Resolve<PlaySoundModel> ();
 
 			mDictionarySearcher.SearchCompleted += OnSearchCompleted;
 
@@ -80,14 +81,43 @@ namespace ListenAndRepeat.ViewModel
 			else
 				mMaxIdxOrder = 0;
 
-			// The words we are querying are now not_started words, because we have just started the program
-			//var searchingWords = conn.Table<WordModel> ().Where (w => w.Status == WordStatus.QUERYING_AH).ToList();
-			var searchingWords = conn.Table<WordModel> ().Where (w => true).ToList();
+			// Words that need to be Searched/Downloaded
+			var searchingWords = conn.Table<WordModel>().ToList().Where(word => NeedsSearch(word));
 
 			foreach (WordModel word in searchingWords)
 				word.Status = WordStatus.NOT_STARTED;
 
-			conn.UpdateAll (searchingWords);
+			conn.UpdateAll (searchingWords.ToList());
+		}
+
+		private bool NeedsSearch(WordModel word)
+		{
+			if (word.Status == WordStatus.QUERYING_AH || word.Status == WordStatus.NETWORK_ERROR)
+				return true;
+
+			var localFile = Path.Combine (MainModel.GetSoundsDirectory (), word.WaveFileName);
+			if (!File.Exists (localFile))
+				return true;
+
+			return false;
+		}
+
+		public void ActionOnWord(WordModel theWord)
+		{
+			if (theWord.Status == WordStatus.COMPLETE) 
+			{
+				mPlaySoundModel.PlaySound (theWord);
+			}
+			else if (!mDictionarySearcher.IsSearching)
+			{
+				using (var conn = new SQLite.SQLiteConnection(mDatabasePath))
+				{
+					theWord.Status = WordStatus.QUERYING_AH;
+					conn.Update (theWord);
+					mDictionarySearcher.Search (theWord.Word);
+					RefreshWordsList (conn);
+				}
+			}
 		}
 
 		static public string GetSoundsDirectory()
@@ -102,30 +132,31 @@ namespace ListenAndRepeat.ViewModel
 			{
 				var theWord = FindWord(conn, e.Word);
 
-				if (theWord == null)	// The user deleted the word?
-					return;
+				// Did the user delete the word?
+				if (theWord != null)
+				{
+					if (e.IsGeneralError)
+					{
+						theWord.Status = WordStatus.GENERAL_ERROR;
+					}
+					else
+					if (e.IsNetworkError)
+					{
+						theWord.Status = WordStatus.NETWORK_ERROR;
+					}
+					else
+					if (!e.Found || e.Waves.Count == 0)
+					{
+						theWord.Status = WordStatus.NOT_FOUND;
+					}
+					else
+					{
+						theWord.WaveFileName = e.Waves.First().Item2;
+						theWord.Status = WordStatus.COMPLETE;
+					}
 
-				if (e.IsGeneralError)
-				{
-					theWord.Status = WordStatus.GENERAL_ERROR;
+					conn.Update (theWord);
 				}
-				else
-				if (e.IsNetworkError)
-				{
-					theWord.Status = WordStatus.NETWORK_ERROR;
-				}
-				else
-				if (!e.Found || e.Waves.Count == 0)
-				{
-					theWord.Status = WordStatus.NOT_FOUND;
-				}
-				else
-				{
-					theWord.WaveFileName = e.Waves.First().Item2;
-					theWord.Status = WordStatus.COMPLETE;
-				}
-
-				conn.Update (theWord);
 
 				LoadNextWord (conn);
 				RefreshWordsList (conn);
@@ -139,7 +170,7 @@ namespace ListenAndRepeat.ViewModel
 
 		private void RefreshWordsList(SQLite.SQLiteConnection conn)
 		{
-			mWordsList = conn.Table<WordModel>().OrderBy(word => word.IdxOrder).ToList();
+			mWordsList = GetSortedWordList(conn);
 
 			var method = WordsListChanged;
 			if (method != null)
@@ -194,7 +225,7 @@ namespace ListenAndRepeat.ViewModel
 
 		private WordModel FindWordByNextNotStarted(SQLiteConnection conn)
 		{
-			return conn.Table<WordModel>().ToList().Where(w => w.Status == WordStatus.NOT_STARTED).FirstOrDefault();
+			return GetSortedWordList(conn).Where(w => w.Status == WordStatus.NOT_STARTED).FirstOrDefault();
 		}
 
 		private WordModel FindWord(SQLiteConnection conn, string word)
@@ -202,11 +233,17 @@ namespace ListenAndRepeat.ViewModel
 			return conn.Table<WordModel>().ToList().Where(w => w.Word == word).FirstOrDefault();
 		}
 
+		private List<WordModel> GetSortedWordList(SQLiteConnection conn)
+		{
+			return conn.Table<WordModel>().OrderBy(word => word.IdxOrder).ToList();
+		}
+
 
 		string mDatabasePath;
 
 		DictionarySearchModel mDictionarySearcher;
 		SuggestionModel mSuggestionModel;
+		PlaySoundModel mPlaySoundModel;
 
 		List<WordModel> mWordsList;
 		int mMaxIdxOrder;

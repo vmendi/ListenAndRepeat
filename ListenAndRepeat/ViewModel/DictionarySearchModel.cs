@@ -16,15 +16,14 @@ namespace ListenAndRepeat.ViewModel
 		{
 			lock (mSearchInProgressSync)
 			{
-				Console.WriteLine ("Starting " + word);
-
 				// Is there another search in progress?
-				if (mCurrentThread != null) 
-					mCurrentThread.Abort ();
+				if (mWaitCallback != null) 
+					throw new Exception ("Search in progress");
 
 				mCurrentResult = new SearchCompletedEventArgs(word);
-				mCurrentThread = new Thread(SearchThread);
-				mCurrentThread.Start();
+
+				mWaitCallback = new WaitCallback (SearchThread);
+				ThreadPool.QueueUserWorkItem (mWaitCallback);
 			}
 		}
 
@@ -33,45 +32,55 @@ namespace ListenAndRepeat.ViewModel
 			get 
 			{
 				lock (mSearchInProgressSync) {
-					return mCurrentThread != null; 
+					return mWaitCallback != null; 
 				}
 			}
 		}
 
-		private void SearchThread() 
+		private void SearchThread(object state) 
 		{
 			try
 			{
 				var theSearchURL = String.Format("http://ahdictionary.com/word/search.html?q={0}", mCurrentResult.Word);
+				string htmlText = null;
 
-				Console.WriteLine ("Step 1 " + mCurrentResult.Word);
-				var htmlText = mWebClient.DownloadString(new Uri(theSearchURL));
-				Console.WriteLine ("Step 2 " + mCurrentResult.Word);
-								
+				mWebRequest = (HttpWebRequest)HttpWebRequest.Create(new Uri(theSearchURL));
+				mWebRequest.Timeout = 10000;
+
+				using (var webResponse = mWebRequest.GetResponse())
+				{
+					using (var responseStream = webResponse.GetResponseStream())
+					{
+						responseStream.ReadTimeout = 10000;
+						using (var streamReader = new StreamReader(responseStream))
+						{
+							htmlText = streamReader.ReadToEnd();
+						}
+					}
+				}
+
 				if (!htmlText.Contains("No word definition found"))
 				{
 					mCurrentResult.Found = true;
-					Console.WriteLine ("Step 3 " + mCurrentResult.Word);
 					
 					ParseWavFiles(htmlText);
 					DownloadWavFiles();
 				}
 			} 
-			catch (WebException e) {
-				Console.WriteLine (e.ToString());
+			catch (WebException exc) {
+				Console.WriteLine (exc.ToString());
 				mCurrentResult.IsNetworkError = true;
 			}
-			catch (Exception e) {
-				Console.WriteLine (e.ToString());
+			catch (Exception exc) {
+				Console.WriteLine (exc.ToString());
 				mCurrentResult.IsGeneralError = true;
 			}
 
-			Console.WriteLine ("Step 10 " + mCurrentResult.Word);
 			var currentResult = mCurrentResult;
 
 			lock (mSearchInProgressSync)
 			{
-				mCurrentThread = null;
+				mWaitCallback = null;
 			}
 
 			var method = SearchCompleted;
@@ -85,9 +94,22 @@ namespace ListenAndRepeat.ViewModel
 
 			foreach (var wave in mCurrentResult.Waves)
 			{
-				Console.WriteLine ("Step 4 " + wave.Item1);
-				var theDataBytes = mWebClient.DownloadData("http://ahdictionary.com" + wave.Item1);
-				Console.WriteLine ("Step 5 " + wave.Item1);
+				byte[] theDataBytes = null;
+
+				mWebRequest = (HttpWebRequest)HttpWebRequest.Create (new Uri("http://ahdictionary.com" + wave.Item1));
+				mWebRequest.Timeout = 10000;
+
+				using (var webResponse = mWebRequest.GetResponse())
+				{
+					using (var responseStream = webResponse.GetResponseStream())
+					{
+						responseStream.ReadTimeout = 10000;
+						using (var binaryReader = new BinaryReader(responseStream)) 
+						{
+							theDataBytes = binaryReader.ReadBytes((int)responseStream.Length);
+						}
+					}
+				}
 
 				// The Library/Cache/ folder might be cleaned out, so it's better to store the files in our
 				// own folder and tell the OS to not backup them
@@ -110,26 +132,10 @@ namespace ListenAndRepeat.ViewModel
 			}
 		}
 
-		private Thread mCurrentThread;
+		private WaitCallback mWaitCallback;
 		private readonly object mSearchInProgressSync = new object();
 		private SearchCompletedEventArgs mCurrentResult;
-		private MyWebClient mWebClient = new MyWebClient();
-
-		private class MyWebClient : WebClient
-		{
-			public int Timeout { get; set; }
-
-			public MyWebClient() : this(3000) { }
-			public MyWebClient(int timeout) { this.Timeout = timeout; }
-
-			protected override WebRequest GetWebRequest(Uri address)
-			{
-				var request = base.GetWebRequest(address);
-				if (request != null)
-					request.Timeout = this.Timeout;
-				return request;
-			}
-		}
+		private HttpWebRequest mWebRequest;
 	}
 	
 	public class SearchCompletedEventArgs : EventArgs

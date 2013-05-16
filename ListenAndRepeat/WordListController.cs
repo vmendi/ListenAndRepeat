@@ -77,7 +77,6 @@ namespace ListenAndRepeat
 		}
 
 		MainModel mMainModel;
-		DictionarySearchModel mDictionarySearchModel;
 		UIBarButtonItem mEditButton;
 		UIBarButtonItem mDoneButton;
 	}
@@ -91,7 +90,6 @@ namespace ListenAndRepeat
 		public TableSource()
 		{
 			mMainModel = ServiceContainer.Resolve<MainModel>();
-			mPlaySoundModel = ServiceContainer.Resolve<PlaySoundModel>();
 		}
 		
 		public override int RowsInSection(UITableView tableview, int section)
@@ -136,7 +134,7 @@ namespace ListenAndRepeat
 
 		public override void RowSelected (UITableView tableView, NSIndexPath indexPath)
 		{
-			mPlaySoundModel.PlaySound(mMainModel.WordsList[indexPath.Row]);
+			mMainModel.ActionOnWord(mMainModel.WordsList[indexPath.Row]);
 
 			// iOS convention is to remove the highlight
 			tableView.DeselectRow(indexPath, true);
