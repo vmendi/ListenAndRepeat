@@ -91,7 +91,8 @@ namespace ListenAndRepeat.ViewModel
 		}
 
 		private bool NeedsSearch(WordModel word)
-		{
+        {
+            return true;
 			if (word.Status == WordStatus.QUERYING_AH || word.Status == WordStatus.NETWORK_ERROR)
 				return true;
 
@@ -151,6 +152,7 @@ namespace ListenAndRepeat.ViewModel
 					}
 					else
 					{
+                        theWord.Pronunciation = e.Pronunciation;
 						theWord.WaveFileName = e.Waves.First().Item2;
 						theWord.Status = WordStatus.COMPLETE;
 					}
@@ -206,6 +208,7 @@ namespace ListenAndRepeat.ViewModel
 				newWordModel.Word = word;
 				newWordModel.Status = WordStatus.NOT_STARTED;
 				newWordModel.WaveFileName = "";
+                newWordModel.Pronunciation = "";
 				newWordModel.IdxOrder = mMaxIdxOrder++;
 
 				conn.Insert(newWordModel);
@@ -267,6 +270,7 @@ namespace ListenAndRepeat.ViewModel
 
 		public int    IdxOrder { get; set; }
 		public string Word { get; set; }
+        public string Pronunciation { get; set; }
 		public string WaveFileName { get; set; }
 
 		public WordStatus Status { get; set; }

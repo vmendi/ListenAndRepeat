@@ -126,7 +126,7 @@ namespace ListenAndRepeat
 				cell.DetailTextLabel.Text = "General error";
 			} else {
 				cell.TextLabel.TextColor = UIColor.Black;
-				cell.DetailTextLabel.Text = "Downloaded... TODO";
+				cell.DetailTextLabel.Text = theWordModel.Pronunciation;
 			}
 
 			return cell;

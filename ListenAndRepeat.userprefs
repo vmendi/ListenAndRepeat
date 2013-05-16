@@ -1,16 +1,18 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release|iPhone" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneDeviceTarget.vmendi’s iPhone" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="ListenAndRepeat/WordListController.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release|iPhoneSimulator" PreferredExecutionTarget="MonoDevelop.IPhone.IPhoneSimulatorTarget.IPhone.6.1" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="ListenAndRepeat/ViewModel/MainModel.cs">
     <Files>
-      <File FileName="ListenAndRepeat/WordListController.cs" Line="125" Column="40" />
-      <File FileName="ListenAndRepeat/ViewModel/DictionarySearchModel.cs" Line="104" Column="24" />
+      <File FileName="ListenAndRepeat/WordListController.cs" Line="123" Column="49" />
+      <File FileName="ListenAndRepeat/ViewModel/DictionarySearchModel.cs" Line="140" Column="23" />
+      <File FileName="ListenAndRepeat/ViewModel/MainModel.cs" Line="95" Column="25" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State expanded="True">
           <Node name="ListenAndRepeat" expanded="True">
-            <Node name="ViewModel" expanded="True" />
-            <Node name="WordListController.cs" selected="True" />
+            <Node name="ViewModel" expanded="True">
+              <Node name="MainModel.cs" selected="True" />
+            </Node>
           </Node>
         </State>
       </Pad>

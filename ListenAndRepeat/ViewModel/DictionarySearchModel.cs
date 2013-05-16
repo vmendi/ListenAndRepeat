@@ -64,6 +64,7 @@ namespace ListenAndRepeat.ViewModel
 					mCurrentResult.Found = true;
 					
 					ParseWavFiles(htmlText);
+					ParsePronunciation(htmlText);
 					DownloadWavFiles();
 				}
 			} 
@@ -120,15 +121,25 @@ namespace ListenAndRepeat.ViewModel
 			}
 		}
 
-		private void ParseWavFiles(string text)
+		private void ParseWavFiles(string html)
 		{
 			// /application/resources/wavs/T0172200.wav
-			Match match = Regex.Match(text, @"/application/resources/wavs/(.*)\.wav", RegexOptions.IgnoreCase);
+			Match match = Regex.Match(html, @"/application/resources/wavs/(.*)\.wav", RegexOptions.IgnoreCase);
 
 			while (match != null && match.Success)
 			{
 				mCurrentResult.Waves.Add(Tuple.Create(match.Groups[0].Value, match.Groups[1].Value + ".wav"));
 				match = match.NextMatch();
+			}
+		}
+
+		private void ParsePronunciation(string html)
+		{
+			Match match = Regex.Match(html, " \\((.+?)\\)", RegexOptions.IgnoreCase);
+
+			if (match != null) 
+			{
+				mCurrentResult.Pronunciation = Regex.Replace(match.Groups[1].Value, "<(.+?)>", "").Replace("", "'").Replace("", "ʊ").Replace("", "u:");
 			}
 		}
 
@@ -141,6 +152,7 @@ namespace ListenAndRepeat.ViewModel
 	public class SearchCompletedEventArgs : EventArgs
 	{
 		public string Word { get { return mWord; } }
+		public string Pronunciation { get; set; }
 		public List<Tuple<string, string>> Waves { get { return mWaves; } }
 
 		public bool Found { get; set; }
