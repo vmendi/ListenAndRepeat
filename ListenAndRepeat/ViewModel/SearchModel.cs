@@ -10,7 +10,7 @@ using System.Xml.Linq;
 
 namespace ListenAndRepeat.ViewModel
 {
-	public class DictionarySearchModel
+	public class SearchModel
 	{
 		public event EventHandler<SearchCompletedEventArgs> SearchCompleted;
 
@@ -44,6 +44,7 @@ namespace ListenAndRepeat.ViewModel
 			try
 			{
                 SearchMerrianWebster();
+                AddWavesAmericanHeritage();
                 DownloadWavFiles();
 			} 
 			catch (WebException exc) {
@@ -77,27 +78,31 @@ namespace ListenAndRepeat.ViewModel
 
             foreach (var entry in entries)
             {
-                ExtractMerrianWebsterEntry(entry, "hw");
+                ExtractMerrianWebsterEntry(entry, "hw", true);
 
                 // Maybe it's an uro (Theoretical => Theoretically)
                 foreach (var uro in entry.Elements("uro"))
                 {
-                    ExtractMerrianWebsterEntry(uro, "ure");
+                    ExtractMerrianWebsterEntry(uro, "ure", true);
                 }
+            }
+
+            // M-W said that there are entries, but we haven't found an exact match. Any will do then.
+            if (!mCurrentResult.Found && entries.Count() > 0)
+            {
+                ExtractMerrianWebsterEntry(entries.First(), "hw", false);
             }
 
             // It's possible that an entry has the same wave as another (wind)
             mCurrentResult.Waves = mCurrentResult.Waves.Distinct().ToList();
         }
 
-        private void ExtractMerrianWebsterEntry(XElement entry, string childElementName)
+        private void ExtractMerrianWebsterEntry(XElement entry, string childElementName, bool exactMatch)
         {
             if (entry.Element(childElementName) == null)
                 return;
 
-            var entryText = entry.Element(childElementName).Value.Replace("*", "").ToLower();
-
-            if (entryText == mCurrentResult.Word.ToLower())
+            if (!exactMatch || IsExactMatch(entry.Element(childElementName)))
             {
                 mCurrentResult.Found |= ExtractMerrianWebsterSounds(entry);
 
@@ -109,6 +114,11 @@ namespace ListenAndRepeat.ViewModel
                         mCurrentResult.Pronunciation += ", " + entry.Element("pr").Value;
                 }
             }
+        }
+
+        private bool IsExactMatch(XElement entry)
+        {
+            return entry.Value.Replace("*", "") == mCurrentResult.Word.ToLower();
         }
 
         bool ExtractMerrianWebsterSounds(XElement entry)
@@ -203,7 +213,6 @@ namespace ListenAndRepeat.ViewModel
             }
         }
 
-        /*
         private void AddWavesAmericanHeritage()
         {
             var theSearchURL = String.Format("http://ahdictionary.com/word/search.html?q={0}", mCurrentResult.Word);
@@ -211,6 +220,7 @@ namespace ListenAndRepeat.ViewModel
 
             if (!htmlText.Contains("No word definition found"))
             {
+                // TODO!
                 // We are only adding new waves, this method assumes another dictionary is the main one.
                 // Therefore we make sure that what we found matches with the exact word we are looking 
                 // up (not a derivate).
@@ -218,7 +228,7 @@ namespace ListenAndRepeat.ViewModel
                 ParseWavFilesAmericanHeritage(htmlText);
             }
         }
-        */
+
 
 		private void ParseWavFilesAmericanHeritage(string html)
 		{
@@ -230,6 +240,9 @@ namespace ListenAndRepeat.ViewModel
                 mCurrentResult.Waves.Add(Tuple.Create("http://ahdictionary.com" + match.Groups[0].Value, match.Groups[1].Value + ".wav"));
 				match = match.NextMatch();
 			}
+
+            // It's possible that an entry has the same wave as another (mace)
+            mCurrentResult.Waves = mCurrentResult.Waves.Distinct().ToList();
 		}
 
 		private void ParsePronunciationAmericanHeritage(string html)

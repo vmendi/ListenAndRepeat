@@ -111,9 +111,9 @@
     <Compile Include="SQLite.cs" />
     <Compile Include="ViewModel\MainModel.cs" />
     <Compile Include="Util\ServiceContainer.cs" />
-    <Compile Include="ViewModel\DictionarySearchModel.cs" />
     <Compile Include="ViewModel\PlaySoundModel.cs" />
     <Compile Include="ViewModel\SuggestionModel.cs" />
+    <Compile Include="ViewModel\SearchModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="MainStoryboard.storyboard" />

@@ -12,7 +12,7 @@ namespace ListenAndRepeat.ViewModel
 		static public void RegisterServices()
 		{
 			ServiceContainer.Register<MainModel>();
-			ServiceContainer.Register<DictionarySearchModel>();
+			ServiceContainer.Register<SearchModel>();
 			ServiceContainer.Register<PlaySoundModel>();
 			ServiceContainer.Register<SuggestionModel>();
 		}
@@ -22,7 +22,7 @@ namespace ListenAndRepeat.ViewModel
 		public MainModel()
 		{
 			// This forces the instantiation
-			mDictionarySearcher = ServiceContainer.Resolve<DictionarySearchModel> ();
+			mDictionarySearcher = ServiceContainer.Resolve<SearchModel> ();
 			mSuggestionModel = ServiceContainer.Resolve<SuggestionModel> ();
 			mPlaySoundModel = ServiceContainer.Resolve<PlaySoundModel> ();
 
@@ -36,6 +36,7 @@ namespace ListenAndRepeat.ViewModel
 				// https://github.com/praeclarum/sqlite-net/wiki
 				// In general, it will execute an automatic migration
 				conn.CreateTable<WordModel>();
+                conn.CreateTable<WaveModel>();
 
 				InitialRefresh(conn);
 				LoadNextWord(conn);
@@ -47,7 +48,20 @@ namespace ListenAndRepeat.ViewModel
 		{
 			using (var conn = new SQLite.SQLiteConnection(mDatabasePath))
 			{
-				conn.Delete(mWordsList[idx]);
+                conn.RunInTransaction(() =>
+                {
+                    var wordID = mWordsList[idx].ID;
+                    var theWaves = conn.Table<WaveModel>().Where(wave => wave.WordID == wordID);
+
+                    foreach (var wave in theWaves)
+                    {
+                        conn.Delete(wave);
+                        File.Delete(Path.Combine ("file://", GetSoundsDirectory(), wave.WaveFileName));
+                    }
+
+                    conn.Delete(mWordsList[idx]);
+                });
+
 				RefreshWordsList(conn);
 			}
 		}
@@ -82,12 +96,15 @@ namespace ListenAndRepeat.ViewModel
 				mMaxIdxOrder = 0;
 
 			// Words that need to be Searched/Downloaded
-			var searchingWords = conn.Table<WordModel>().ToList().Where(word => NeedsSearch(word));
+            var allWords = conn.Table<WordModel>().ToList();
 
-			foreach (WordModel word in searchingWords)
-				word.Status = WordStatus.NOT_STARTED;
+			foreach (WordModel word in allWords)
+            {
+                if (NeedsSearch(word))
+                    word.Status = WordStatus.NOT_STARTED;
+            }
 
-			conn.UpdateAll (searchingWords.ToList());
+            conn.UpdateAll(allWords.ToList());
 		}
 
 		private bool NeedsSearch(WordModel word)
@@ -95,21 +112,31 @@ namespace ListenAndRepeat.ViewModel
 			if (word.Status == WordStatus.QUERYING_AH || word.Status == WordStatus.NETWORK_ERROR)
 				return true;
 
-            foreach (var waveFileName in word.WaveFileNames)
+            List<WaveModel> theWaves = GetWavesForWord(word);
+
+            foreach (var wave in theWaves)
             {
-			    var localFile = Path.Combine (MainModel.GetSoundsDirectory (), waveFileName);
-			    if (!File.Exists (localFile))
+			    var localFile = Path.Combine (MainModel.GetSoundsDirectory (), wave.WaveFileName);
+			    if (!File.Exists(localFile))
     				return true;
             }
 
 			return false;
 		}
 
+        private List<WaveModel> GetWavesForWord(WordModel word)
+        {
+            using (var conn = new SQLite.SQLiteConnection(mDatabasePath))
+            {
+                return conn.Table<WaveModel>().Where(w => w.WordID == word.ID).ToList();
+            }
+        }
+
 		public void ActionOnWord(WordModel theWord)
 		{
 			if (theWord.Status == WordStatus.COMPLETE) 
 			{
-				mPlaySoundModel.PlaySound (theWord);
+                mPlaySoundModel.PlaySound(theWord, GetWavesForWord(theWord));
 			}
 			else if (!mDictionarySearcher.IsSearching)
 			{
@@ -133,34 +160,41 @@ namespace ListenAndRepeat.ViewModel
 		{
 			using (var conn = new SQLite.SQLiteConnection(mDatabasePath))
 			{
-				var theWord = FindWord(conn, e.Word);
+                conn.RunInTransaction(() =>
+                {
+    				var theWord = FindWord(conn, e.Word);
 
-				// Did the user delete the word?
-				if (theWord != null)
-				{
-					if (e.IsGeneralError)
-					{
-						theWord.Status = WordStatus.GENERAL_ERROR;
-					}
-					else
-					if (e.IsNetworkError)
-					{
-						theWord.Status = WordStatus.NETWORK_ERROR;
-					}
-					else
-					if (!e.Found || e.Waves.Count == 0)
-					{
-						theWord.Status = WordStatus.NOT_FOUND;
-					}
-					else
-					{
-                        theWord.Pronunciation = e.Pronunciation;
-                        theWord.WaveFileNames = e.Waves.Select(wave => wave.Item1).ToArray();
-						theWord.Status = WordStatus.COMPLETE;
-					}
+    				// Did the user delete the word?
+    				if (theWord != null)
+    				{
+    					if (e.IsGeneralError)
+    					{
+    						theWord.Status = WordStatus.GENERAL_ERROR;
+    					}
+    					else
+    					if (e.IsNetworkError)
+    					{
+    						theWord.Status = WordStatus.NETWORK_ERROR;
+    					}
+    					else
+    					if (!e.Found || e.Waves.Count == 0)
+    					{
+    						theWord.Status = WordStatus.NOT_FOUND;
+    					}
+    					else
+    					{
+                            theWord.Status = WordStatus.COMPLETE;
+                            theWord.Pronunciation = e.Pronunciation;
 
-					conn.Update (theWord);
-				}
+                            foreach (var wave in e.Waves)
+                            {
+                                conn.Insert(new WaveModel() { WordID = theWord.ID, WaveFileName = wave.Item2 });
+                            }
+    					}
+
+    					conn.Update (theWord);
+    				}
+                });
 
 				LoadNextWord (conn);
 				RefreshWordsList (conn);
@@ -209,7 +243,6 @@ namespace ListenAndRepeat.ViewModel
 				var newWordModel = new WordModel();
 				newWordModel.Word = word;
 				newWordModel.Status = WordStatus.NOT_STARTED;
-                newWordModel.WaveFileNames = null;
                 newWordModel.Pronunciation = "";
 				newWordModel.IdxOrder = mMaxIdxOrder++;
 
@@ -246,7 +279,7 @@ namespace ListenAndRepeat.ViewModel
 
 		string mDatabasePath;
 
-		DictionarySearchModel mDictionarySearcher;
+		SearchModel mDictionarySearcher;
 		SuggestionModel mSuggestionModel;
 		PlaySoundModel mPlaySoundModel;
 
@@ -270,12 +303,21 @@ namespace ListenAndRepeat.ViewModel
 		[PrimaryKey, AutoIncrement]
 		public int ID { get; set; }
 
-		public int    IdxOrder { get; set; }
-		public string Word { get; set; }
-        public string Pronunciation { get; set; }
-		public string[] WaveFileNames { get; set; }
-
+		public int        IdxOrder { get; set; }
+		public string     Word { get; set; }
+        public string     Pronunciation { get; set; }
 		public WordStatus Status { get; set; }
 	}
+
+    [Serializable]
+    public class WaveModel
+    {
+        [PrimaryKey, AutoIncrement]
+        public int ID { get; set; }
+
+        [Indexed]
+        public int    WordID { get; set; }
+        public string WaveFileName { get; set; }
+    }
 }
 

@@ -85,8 +85,7 @@ namespace ListenAndRepeat
 	{
 		static string mCellIdentifier = "WordCell";
 		MainModel mMainModel;
-		PlaySoundModel mPlaySoundModel;
-		
+				
 		public TableSource()
 		{
 			mMainModel = ServiceContainer.Resolve<MainModel>();
@@ -120,7 +119,7 @@ namespace ListenAndRepeat
 				cell.DetailTextLabel.Text = "Not Found";
 			} else if (theWordModel.Status == WordStatus.NETWORK_ERROR) {
 				cell.TextLabel.TextColor = UIColor.Red;
-				cell.DetailTextLabel.Text = "Network error";
+				cell.DetailTextLabel.Text = "Network error. Tap to try again";
 			} else if (theWordModel.Status == WordStatus.GENERAL_ERROR) {
 				cell.TextLabel.TextColor = UIColor.Red;
 				cell.DetailTextLabel.Text = "General error";
