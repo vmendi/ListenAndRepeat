@@ -1,6 +1,7 @@
 using System;
 using MonoTouch.AVFoundation;
 using System.IO;
+using System.Linq;
 
 namespace ListenAndRepeat.ViewModel
 {
@@ -14,7 +15,7 @@ namespace ListenAndRepeat.ViewModel
 		{
 			if (theWord.Status == WordStatus.COMPLETE)
 			{
-				var localFile = Path.Combine ("file://", MainModel.GetSoundsDirectory (), theWord.WaveFileName);
+				var localFile = Path.Combine ("file://", MainModel.GetSoundsDirectory (), theWord.WaveFileNames.First());
 				mCurrentSound = AVAudioPlayer.FromData (MonoTouch.Foundation.NSData.FromFile(localFile));
 				mCurrentSound.Play ();
 			}
