@@ -88,10 +88,6 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AppDelegate.cs" />
-    <Compile Include="SecondViewController.cs" />
-    <Compile Include="SecondViewController.designer.cs">
-      <DependentUpon>SecondViewController.cs</DependentUpon>
-    </Compile>
     <Compile Include="WordDetailController.cs" />
     <Compile Include="WordDetailController.designer.cs">
       <DependentUpon>WordDetailController.cs</DependentUpon>

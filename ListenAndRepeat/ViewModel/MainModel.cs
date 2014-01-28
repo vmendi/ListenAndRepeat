@@ -31,6 +31,8 @@ namespace ListenAndRepeat.ViewModel
 			var documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 			mDatabasePath = Path.Combine(documentsPath, "..", "Library", "db_sqlite-net.db");
 
+			bool isFirstLoad = false;
+
 			using (var conn = new SQLite.SQLiteConnection(mDatabasePath))
 			{
 				// https://github.com/praeclarum/sqlite-net/wiki
@@ -41,6 +43,15 @@ namespace ListenAndRepeat.ViewModel
 				InitialRefresh(conn);
 				LoadNextWord(conn);
 				RefreshWordsList(conn);
+
+				isFirstLoad = conn.Table<WordModel>().Count() == 0;
+			}
+
+			if (isFirstLoad)
+			{
+				AddWord("Thanks");
+				AddWord("For");
+				AddWord("Downloading");
 			}
 		}
 	
