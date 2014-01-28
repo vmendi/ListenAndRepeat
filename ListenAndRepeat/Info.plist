@@ -12,6 +12,19 @@
 	<string>MainStoryboard</string>
 	<key>MinimumOSVersion</key>
 	<string>5.0</string>
+	<key>CFBundleIconFiles</key>
+	<array>
+		<string>icon-114</string>
+		<string>icon-120</string>
+		<string>icon-57</string>
+	</array>
+	<key>CFBundleDisplayName</key>
+	<string>ListenAndRepeat</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.zincoontrin.listenandrepeat</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
 </dict>
 </plist>
-
